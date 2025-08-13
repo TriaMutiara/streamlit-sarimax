@@ -26,7 +26,6 @@ streamlit run main.py
 2. Unggah file Excel yang berisi data QoS dengan format:
    - Kolom 'Tanggal' (format YYYY-MM-DD)
    - Kolom 'Jam' (format HH.MM)
-   - Kolom 'Hari' (nama hari)
    - Kolom metrik QoS (latency, packet_loss, jitter, upload, download)
 3. Pilih kolom yang ingin diprediksi (upload atau download)
 4. Klik tombol "Proses" untuk memulai prediksi
