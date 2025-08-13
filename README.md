@@ -35,7 +35,7 @@ streamlit run main.py
 ### Format Data Excel
 Pastikan file Excel Anda memiliki struktur sebagai berikut:
 - Tanggal: Tanggal pengukuran (contoh: 2023-01-01)
-- Jam: Waktu pengukuran (contoh: 08.00)
+- Jam: Waktu pengukuran (contoh: 09.00)
 - latency: Nilai latency dalam ms
 - packet_loss: Nilai packet loss dalam %
 - jitter: Nilai jitter dalam ms
