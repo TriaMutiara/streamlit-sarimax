@@ -12,14 +12,14 @@ SARIMAX dipilih karena dapat memodelkan **pola musiman (seasonality)** sekaligus
 - Memastikan kolom waktu (Timestamp) dipakai sebagai index (DateTimeIndex).
 - Drop missing values supaya model lebih stabil.
 
-### 3. Analisis Korelasi
-- Hitung korelasi Pearson antar variabel (upload, download, latency, jitter, packet_loss).
-- Dibuat heatmap dengan seaborn → supaya terlihat variabel mana yang paling berpengaruh.
-
-### 4. Pilih Target Throughput
+### 3. Pilih Target 
 - User pilih target (misalnya upload) dari dropdown Streamlit.
 - Target inilah yang digunakan untuk throughput.
 - Variabel lain otomatis jadi variabel eksogen (faktor eksternal).
+
+### 4. Analisis Korelasi
+- Hitung korelasi Pearson antar variabel (upload, download, latency, jitter, packet_loss).
+- Dibuat heatmap dengan seaborn → supaya terlihat variabel mana yang paling berpengaruh.
 
 ### 5. Split Data
 - Data dibagi 80% training, 20% testing.
@@ -55,4 +55,4 @@ SARIMAX dipilih karena dapat memodelkan **pola musiman (seasonality)** sekaligus
 - Tabel prediksi masa depan
 
 ### Jadi alurnya:
-📂 Upload data → 🧹 Preprocessing → 📊 Analisis korelasi → 🎯 Pilih target → 🔧 Latih SARIMAX → 📈 Prediksi & Forecast → 📝 Insight
+📂 Upload data → 🧹 Preprocessing → 🎯 Pilih target → 📊 Analisis korelasi → 🔧 Latih SARIMAX → 📈 Prediksi & Forecast → 📝 Insight
