@@ -1,65 +1,58 @@
-# Arima-QoS
-Penelitian QoS dengan Model ARIMA
+# 📊 Proyek Forecasting SARIMAX dengan Exogenous Variables
 
-## Cara Instalasi dan Menjalankan Aplikasi
+Proyek ini bertujuan untuk melakukan **forecasting time series** menggunakan model **SARIMAX (Seasonal AutoRegressive Integrated Moving Average with eXogenous regressors)**.  
+SARIMAX dipilih karena dapat memodelkan **pola musiman (seasonality)** sekaligus memperhitungkan pengaruh **variabel eksternal (exogenous variables)**.
 
-### Langkah 1: Instalasi Dependensi
-Instal semua paket Python yang diperlukan dengan menjalankan:
-```bash
-pip install -r requirements.txt
-```
-Perintah ini akan menginstal:
-- pandas (untuk manipulasi data)
-- matplotlib (untuk visualisasi data)
-- statsmodels (untuk model SARIMAX)
-- streamlit (untuk antarmuka web)
-- openpyxl (untuk membaca file Excel)
+### 1. Upload Data
+- User upload file Excel (.xlsx) berisi data kualitas internet.
+- Data dibaca dengan pandas → pd.read_excel.
 
-### Langkah 2: Menjalankan Aplikasi
-Setelah semua dependensi terinstal, jalankan aplikasi dengan perintah:
-```bash
-streamlit run main.py
-```
+### 2. Preprocessing Data
+- Menghapus kolom ID Pelanggan karena tidak relevan untuk prediksi.
+- Memastikan kolom waktu (Timestamp) dipakai sebagai index (DateTimeIndex).
+- Drop missing values supaya model lebih stabil.
 
-### Langkah 3: Menggunakan Aplikasi
-1. Aplikasi akan otomatis terbuka di browser web Anda (biasanya di http://localhost:8501)
-2. Unggah file Excel yang berisi data QoS dengan format:
-   - Kolom 'Tanggal' (format YYYY-MM-DD)
-   - Kolom 'Jam' (format HH.MM)
-   - Kolom metrik QoS (latency, packet_loss, jitter, upload, download)
-3. Pilih kolom yang ingin diprediksi (upload atau download)
-4. Klik tombol "Proses" untuk memulai prediksi
-5. Lihat hasil prediksi dan visualisasi data
-6. Unduh hasil prediksi dalam format CSV jika diperlukan
+### 3. Analisis Korelasi
+- Hitung korelasi Pearson antar variabel (upload, download, latency, jitter, packet_loss).
+- Dibuat heatmap dengan seaborn → supaya terlihat variabel mana yang paling berpengaruh.
 
-### Format Data Excel
-Pastikan file Excel Anda memiliki struktur sebagai berikut:
-- Tanggal: Tanggal pengukuran (contoh: 2023-01-01)
-- Jam: Waktu pengukuran (contoh: 09.00)
-- latency: Nilai latency dalam ms
-- packet_loss: Nilai packet loss dalam %
-- jitter: Nilai jitter dalam ms
-- upload: Nilai upload speed dalam Mbps
-- download: Nilai download speed dalam Mbps
+### 4. Pilih Target Throughput
+- User pilih target (misalnya upload) dari dropdown Streamlit.
+- Target inilah yang digunakan untuk throughput.
+- Variabel lain otomatis jadi variabel eksogen (faktor eksternal).
 
-### Contoh File
-Anda dapat menggunakan file `tetst-drive ISP.xlsx` sebagai contoh data untuk mencoba aplikasi.
+### 5. Split Data
+- Data dibagi 80% training, 20% testing.
+- train_exog = variabel input eksternal untuk train.
+- test_exog = variabel input eksternal untuk test.
 
+### 6. Optimasi Parameter SARIMAX
+- Ada fungsi optimize_sarimax → coba beberapa kombinasi parameter p, d, q.
+- Pilih model dengan AIC terkecil (lebih baik).
+- Model SARIMAX dilatih pakai training data.
 
-## Penjelasan Plot:
-### Data Pelatihan (Garis biru putus-putus):
-- Menampilkan data historis yang digunakan untuk melatih model SARIMAX
-- Mewakili periode sebelum pembagian dataset
+### 7. Prediksi
+- Model prediksi nilai target pada periode test.
+- Hasil prediksi dibandingkan dengan data asli.
+- Hitung MAPE sebagai skor akurasi.
 
-### Data Pengujian (Garis abu-abu putus-putus):
-- Menampilkan data aktual dari periode pengujian
-- Digunakan untuk memvalidasi akurasi pengujian model
+### 8. Prediksi Masa Depan
+- Buat data future exogenous variables (pakai pola jam & hari).
+- Model prediksi ke depan (default 4 step).
+- Output jadi forecast kualitas internet di masa depan.
 
-### Nilai Disesuaikan (Garis oranye):
-- Nilai hasil fitting model pada data pelatihan
-- Menunjukkan seberapa baik model menangkap pola dalam data pelatihan
+## 9. Visualisasi
+- Grafik interaktif (Plotly):
+- Data asli
+- Prediksi
+- Forecast ke depan
+- Tabel hasil prediksi masa depan.
 
-### Peramalan (Titik-titik hijau):
-- Prediksi untuk periode masa depan
-- Ditampilkan sebagai titik dengan marker 'o'
-- Periode ini tidak termasuk dalam data asli
+### 10. Insight
+- Streamlit tampilkan hasil:
+- Variabel target
+- Skor akurasi
+- Tabel prediksi masa depan
+
+### Jadi alurnya:
+📂 Upload data → 🧹 Preprocessing → 📊 Analisis korelasi → 🎯 Pilih target → 🔧 Latih SARIMAX → 📈 Prediksi & Forecast → 📝 Insight
