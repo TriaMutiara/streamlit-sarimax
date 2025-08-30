@@ -8,7 +8,7 @@ SARIMAX dipilih karena dapat memodelkan **pola musiman (seasonality)** sekaligus
 - Data dibaca dengan pandas → pd.read_excel.
 
 ### 2. Preprocessing Data
-- Menghapus kolom ID Pelanggan karena tidak relevan untuk prediksi.
+- Menghapus kolom yang tidak relevan untuk prediksi.
 - Memastikan kolom waktu (Timestamp) dipakai sebagai index (DateTimeIndex).
 - Drop missing values supaya model lebih stabil.
 
