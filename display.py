@@ -16,7 +16,7 @@ def display_header():
 
 def display_data_preview(df):
     st.markdown("### 👀 Preview Data dengan Variabel Eksogen:")
-    st.dataframe(df, use_container_width=True)
+    st.dataframe(df, width="stretch")
 
 def display_dataset_info(df):
     st.markdown("### 📊 Informasi Dataset")
@@ -41,7 +41,7 @@ def get_prediction_parameters(df):
     metrik_terpilih = 'download' if 'download' in kolom_kecepatan else (kolom_kecepatan[0] if kolom_kecepatan else None)
     hari_prediksi = st.number_input("🗓️ Berapa hari ke depan ingin diprediksi?", min_value=1, max_value=30, value=2)
     jam_prediksi_terpilih = [9, 13, 17] # Default prediction times
-    mulai_prediksi = st.button("🚀 Mulai Prediksi SARIMAX", type="primary", use_container_width=True)
+    mulai_prediksi = st.button("🚀 Mulai Prediksi SARIMAX", type="primary", width="stretch")
     if not mulai_prediksi:
         st.info("👆 Klik tombol di atas untuk memulai proses prediksi.")
         st.stop()
@@ -84,7 +84,7 @@ def display_full_prediction_table(dataframe_forcast, semua_prediksi, semua_eksog
         tabel_prediksi[nama_tampilan] = np.round(prediksi, 2)
 
     tabel_prediksi.reset_index(drop=True, inplace=True)
-    st.dataframe(tabel_prediksi, use_container_width=True)
+    st.dataframe(tabel_prediksi, width="stretch")
 
 def display_model_summary(skor_akurasi):
     st.markdown("### 🎯 Ringkasan Model SARIMAX dengan Eksogen")
@@ -104,7 +104,7 @@ def display_model_summary(skor_akurasi):
             }
             for metrik, akurasi in skor_akurasi.items()
         ])
-        st.dataframe(tabel_akurasi, hide_index=True, use_container_width=True)
+        st.dataframe(tabel_akurasi, hide_index=True, width="stretch")
 
     rata_rata_akurasi = np.mean(list(skor_akurasi.values()))
     if rata_rata_akurasi < 20:

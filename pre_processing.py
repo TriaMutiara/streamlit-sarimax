@@ -52,7 +52,7 @@ def clean_data(df):
     data_bersih = data_bersih.dropna(subset=kolom_penting, how='all')
 
     # Interpolate and fill missing values
-    data_bersih = data_bersih.interpolate(method='linear').fillna(method='ffill').fillna(method='bfill')
+    data_bersih = data_bersih.interpolate(method='linear').ffill().bfill()
 
     # Create time-based exogenous variables from the index
     if hasattr(data_bersih.index, 'hour'):
