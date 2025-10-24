@@ -1,12 +1,15 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import locale
+
 
 def setup_page():
     st.set_page_config(
         page_title="Prediksi Kualitas Internet dengan Eksogen",
         page_icon="📶",
     )
+    locale.setlocale(locale.LC_TIME, 'id_ID')
 
 def display_header():
     st.title('📶 Prediksi Kualitas Internet (QoS) - SARIMAX dengan Variabel Eksogen')
