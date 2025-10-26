@@ -132,43 +132,25 @@ class SarimaxEksogenPrediktor:
 
     def cari_parameter_optimal(self, data, eksogen, nama_kolom):
         best_aic = math.inf
-        d = self.cek_stasioneritas(data, nama_kolom)
-        best_order = (1, d, 1)
-        best_seasonal = (0, 0, 0, 0)
-        candidate_orders = []
-        candidate_seasonals = []
-
-        if 'upload' in nama_kolom.lower(): candidate_orders = [ (1, d, 1), (2, d, 1), (1, d, 2),(0, d, 1), (1, d, 0), (3, d, 2)]
-        if 'jitter' in nama_kolom.lower() or 'latency' in nama_kolom.lower():
-            candidate_orders = [(2, 1, 2), (3, 1, 1), (2, 1, 3)]
-        elif 'packet_loss' in nama_kolom.lower():
-            candidate_orders = [(1, 1, 1), (2, 1, 1), (1, 1, 2)]
-        else:
-            candidate_orders = [(1, 1, 1), (2, 1, 2), (1, 1, 2)]
-        candidate_seasonals = [(0, 0, 0, 0)]
-        obs_per_day = 3
-        obs_per_week = 5 * obs_per_day
-        candidate_seasonals.extend([
-            (1, 0, 1, obs_per_day),
-            (1, 1, 0, obs_per_day),
-            (1, 0, 1, obs_per_week),
-            (1, 1, 0, obs_per_week),
-        ])
+        dif = self.cek_stasioneritas(data, nama_kolom)
+        best_order = []
+        best_seasonal = []
+        
+        obs_per_day = 3 ## 9 13 17
+        obs_per_week = 7 * obs_per_day
+        candidate_orders = [ (0, dif, 1),(1, dif, 0),(1, dif, 1), (1, dif, 2),(2, dif, 1),(2, dif, 2)]
+        candidate_seasonals = [(1, dif, 0, obs_per_day),(1, dif, 1, obs_per_day),(1, dif, 0, obs_per_week),(1, dif, 1, obs_per_week)]
         
         for order in candidate_orders:
             for seasonal in candidate_seasonals:
-                p, d_val, q = order
+                p, d, q = order
                 P, D, Q, s = seasonal
-                if s > 0 and len(data) < 2 * s:
-                    continue
                 try:
                     model = SARIMAX(
                         data,
                         exog=eksogen,
-                        order=(p, d_val, q),
-                        seasonal_order=(P, D, Q, s),
-                        enforce_stationarity=False,
-                        enforce_invertibility=False
+                        order=(p, d, q),
+                        seasonal_order=(P, D, Q, s)
                     )
                     result = model.fit(disp=False, maxiter=500)
                     if result.aic < best_aic:
@@ -198,9 +180,7 @@ class SarimaxEksogenPrediktor:
                 data_train,
                 exog=eksogen_train,
                 order=parameter_optimal,
-                seasonal_order=musiman_optimal,
-                enforce_stationarity=False,
-                enforce_invertibility=False
+                seasonal_order=musiman_optimal
             )
             model_fit = model.fit(disp=False, maxiter=500)
             akurasi = 0.0
