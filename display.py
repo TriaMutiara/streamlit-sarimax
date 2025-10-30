@@ -6,17 +6,17 @@ import locale
 
 def setup_page():
     st.set_page_config(
-        page_title="Prediksi Kualitas Internet dengan Eksogen",
+        page_title="Prediksi Kualitas Internet",
         page_icon="📶",
     )
     locale.setlocale(locale.LC_TIME, 'id_ID')
 
 def display_header():
-    st.title('📶 Prediksi Kualitas Internet (QoS) - SARIMAX dengan Variabel Eksogen')
+    st.title('📶 Prediksi Kualitas Internet (QoS) - SARIMAX')
 
 def display_data_preview(df):
-    st.markdown("### 👀 Preview Data dengan Variabel Eksogen:")
-    st.dataframe(df, width="stretch")
+    st.markdown("### 👀 Preview Data:")
+    st.dataframe(df)
 
 def display_dataset_info(df):
     st.markdown("### 📊 Informasi Dataset")
@@ -108,7 +108,7 @@ def display_model_summary(skor_akurasi):
 
     rata_rata_akurasi = np.mean(list(skor_akurasi.values()))
     if rata_rata_akurasi < 20:
-        st.success(f"🎉 **Model Sangat Akurat!** SARIMAX dengan variabel eksogen berhasil mencapai akurasi tinggi dengan rata-rata error {rata_rata_akurasi:.1f}%. Prediksi dapat diandalkan untuk perencanaan.")
+        st.success(f"🎉 **Model Sangat Akurat!** SARIMAX berhasil mencapai akurasi tinggi dengan rata-rata error {rata_rata_akurasi:.1f}%. Prediksi dapat diandalkan untuk perencanaan.")
     elif rata_rata_akurasi < 35:
         st.success(f"✅ **Model Cukup Reliable!** Dengan error rata-rata {rata_rata_akurasi:.1f}%, model menunjukkan performa baik dan dapat digunakan untuk estimasi.")
     elif rata_rata_akurasi < 50:
