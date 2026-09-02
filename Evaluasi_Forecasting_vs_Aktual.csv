@@ -1,0 +1,46 @@
+﻿Hari & Tanggal;Sesi;Parameter;Prediksi;Aktual Riil;Selisih (Error)
+SELASA (04/08/2026);Pagi (09:00);Orang;9;9;0
+;;Throughput;0.92 Mbps;0.38 Mbps;0.54 Mbps
+;;Latency;29.34 ms;43.71 ms;14.37 ms
+;;Jitter;42.13 ms;97.20 ms;55.07 ms
+;;Packet Loss;2.64 %;1.45 %;1.19 %
+;Siang (12:00);Orang;14;20;6
+;;Throughput;0.96 Mbps;1.00 Mbps;0.04 Mbps
+;;Latency;33.62 ms;477.55 ms;443.93 ms
+;;Jitter;52.07 ms;553.54 ms;501.47 ms
+;;Packet Loss;1.98 %;1.28 %;0.70 %
+;Sore (15:00);Orang;16;16;0
+;;Throughput;1.02 Mbps;0.04 Mbps;0.98 Mbps
+;;Latency;32.61 ms;27.35 ms;5.26 ms
+;;Jitter;50.75 ms;58.13 ms;7.38 ms
+;;Packet Loss;1.35 %;0.45 %;0.90 %
+RABU (05/08/2026);Pagi (09:00);Orang;9;9;0
+;;Throughput;1.09 Mbps;0.50 Mbps;0.59 Mbps
+;;Latency;30.09 ms;28.35 ms;1.74 ms
+;;Jitter;46.83 ms;46.46 ms;0.37 ms
+;;Packet Loss;1.03 %;0.70 %;0.33 %
+;Siang (12:00);Orang;14;26;12
+;;Throughput;1.27 Mbps;0.59 Mbps;0.68 Mbps
+;;Latency;34.63 ms;43.58 ms;8.78 ms
+;;Jitter;56.02 ms;98.06 ms;42.04 ms
+;;Packet Loss;0.47 %;0.37 %;0.10 %
+;Sore (15:00);Orang;16;26;10
+;;Throughput;1.24 Mbps;1.11 Mbps;0.13 Mbps
+;;Latency;32.54 ms;53.11 ms;20.57 ms
+;;Jitter;51.15 ms;118.98 ms;67.83 ms
+;;Packet Loss;0.29 %;0.36 %;0.07 %
+KAMIS (06/08/2026);Pagi (09:00);Orang;9;9;0
+;;Throughput;1.02 Mbps;1.89 Mbps;0.87 Mbps
+;;Latency;31.18 ms;38.64 ms;7.46 ms
+;;Jitter;49.84 ms;79.46 ms;29.62 ms
+;;Packet Loss;0.35 %;0.88 %;0.53 %
+;Siang (12:00);Orang;14;57;43
+;;Throughput;1.15 Mbps;0.85 Mbps;0.30 Mbps
+;;Latency;36.04 ms;28.16 ms;7.88 ms
+;;Jitter;60.80 ms;39.06 ms;21.74 ms
+;;Packet Loss;0.28 %;0.52 %;0.24 %
+;Sore (15:00);Orang;16;31;15
+;;Throughput;1.15 Mbps;0.92 Mbps;0.23 Mbps
+;;Latency;33.80 ms;62.26 ms;28.46 ms
+;;Jitter;55.23 ms;145.56 ms;90.33 ms
+;;Packet Loss;0.28 %;1.35 %;1.07 %
