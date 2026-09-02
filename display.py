@@ -3,115 +3,145 @@ import pandas as pd
 import numpy as np
 import locale
 
-
 def setup_page():
     st.set_page_config(
-        page_title="Prediksi Kualitas Internet",
-        page_icon="📶",
+        page_title="Prediksi Kualitas Internet (QoS) - SARIMAX",
+        page_icon="📶"
     )
-    locale.setlocale(locale.LC_TIME, 'id_ID')
+    try:
+        locale.setlocale(locale.LC_TIME, 'id_ID.UTF-8')
+    except Exception:
+        try:
+            locale.setlocale(locale.LC_TIME, 'Indonesian_Indonesia.1252')
+        except Exception:
+            pass
 
 def display_header():
-    st.title('📶 Prediksi Kualitas Internet (QoS) - SARIMAX')
+    st.title("Prediksi Kualitas Internet (QoS) - SARIMAX")
 
 def display_data_preview(df):
-    st.markdown("### 👀 Preview Data:")
-    st.dataframe(df)
+    st.subheader("Preview Data")
+    st.dataframe(df, width='content')
 
 def display_dataset_info(df):
-    st.markdown("### 📊 Informasi Dataset")
+    st.subheader("Informasi Dataset")
     col_info1, col_info2 = st.columns(2)
     with col_info1:
-        st.markdown("**📈 Metrik QoS Tersedia:**")
-        metrik_qos = [col for col in df.columns if col in ['upload', 'download', 'latency', 'packet_loss', 'jitter']]
+        st.markdown("**Metrik QoS:**")
+        metrik_qos = [col for col in ['throughput', 'latency', 'jitter', 'packet_loss', 'upload', 'download'] if col in df.columns]
         for metrik in metrik_qos:
-            st.write(f"• {metrik.title()}")
+            if metrik == 'throughput':
+                st.write("• Throughput (Mbps)")
+            elif metrik == 'latency':
+                st.write("• Latency (ms)")
+            elif metrik == 'jitter':
+                st.write("• Jitter (ms)")
+            elif metrik == 'packet_loss':
+                st.write("• Packet Loss (%)")
+            else:
+                st.write(f"• {metrik.title()}")
     with col_info2:
-        st.markdown("**🎯 Variabel Eksogen Tersedia:**")
-        eksogen_vars = [col for col in df.columns if col in ['hari_encoded', 'jam', 'sit_person']]
+        st.markdown("**Variabel Eksogen:**")
+        eksogen_vars = [col for col in ['hari_encoded', 'jam', 'orang'] if col in df.columns]
         for var in eksogen_vars:
-            if var == 'hari_encoded': st.write("• Hari")
-            elif var == 'jam': st.write("• Jam")
-            elif var == 'sit_person': st.write("• Sit Person")
+            if var == 'hari_encoded': st.write("• Hari (Pola Mingguan)")
+            elif var == 'jam': st.write("• Jam (Pola Harian: 09:00, 12:00, 15:00)")
+            elif var == 'orang': st.write("• Jumlah Pengguna (Orang)")
     st.divider()
 
 def get_prediction_parameters(df):
-    st.markdown("### ⚙️ Konfigurasi Prediksi")
-    kolom_kecepatan = [col for col in df.columns if col in ['upload', 'download']]
-    metrik_terpilih = 'download' if 'download' in kolom_kecepatan else (kolom_kecepatan[0] if kolom_kecepatan else None)
-    hari_prediksi = st.number_input("🗓️ Berapa hari ke depan ingin diprediksi?", min_value=1, max_value=30, value=2)
-    jam_prediksi_terpilih = [9, 13, 17] # Default prediction times
-    mulai_prediksi = st.button("🚀 Mulai Prediksi SARIMAX", type="primary", width="stretch")
-    if not mulai_prediksi:
-        st.info("👆 Klik tombol di atas untuk memulai proses prediksi.")
-        st.stop()
-    return metrik_terpilih, hari_prediksi, jam_prediksi_terpilih
+    st.subheader("Konfigurasi Prediksi")
+    hari_prediksi = st.number_input("Berapa hari ke depan ingin diprediksi?", min_value=1, max_value=30, value=2)
+    jam_prediksi_terpilih = [9, 12, 15]
 
-def display_prediction_results(metrik, prediksi, akurasi):
+    mulai_prediksi = st.button("Mulai Prediksi SARIMAX", type="primary", width='content')
+    if not mulai_prediksi:
+        st.stop()
+    return hari_prediksi, jam_prediksi_terpilih
+
+def _satuan(metrik):
+    if metrik in ('throughput', 'upload', 'download'):
+        return 'Mbps'
+    if metrik in ('latency', 'jitter'):
+        return 'ms'
+    if metrik == 'packet_loss':
+        return '%'
+    return ''
+
+def display_prediction_results(metrik, prediksi, akurasi, diagnostik=None):
     nilai_tertinggi = np.max(prediksi)
     nilai_terendah = np.min(prediksi)
     rata_rata_prediksi = np.mean(prediksi)
 
-    col_insight1, col_insight2, col_insight3, col_insight4 = st.columns(4)
-    with col_insight1:
-        st.metric("📈 Nilai Tertinggi", f"{nilai_tertinggi:.2f}")
-    with col_insight2:
-        st.metric("📉 Nilai Terendah", f"{nilai_terendah:.2f}")
-    with col_insight3:
-        st.metric("📊 Rata-rata", f"{rata_rata_prediksi:.2f}")
-    with col_insight4:
-        st.metric("🎯 Akurasi (MAPE)", f"{akurasi:.1f}%")
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Nilai Tertinggi", f"{nilai_tertinggi:.2f}")
+    with col2:
+        st.metric("Nilai Terendah", f"{nilai_terendah:.2f}")
+    with col3:
+        st.metric("Rata-rata", f"{rata_rata_prediksi:.2f}")
+    with col4:
+        st.metric("Error (%)", f"{akurasi:.1f}%")
 
-def display_full_prediction_table(dataframe_forcast, semua_prediksi, semua_eksogen, metrik_terpilih):
-    st.markdown("### 📋 Tabel Lengkap Prediksi dengan Eksogen")
+    if diagnostik:
+        satuan = _satuan(metrik)
+        mae = diagnostik.get('mae')
+        rmse = diagnostik.get('rmse')
+        if mae is not None and rmse is not None:
+            col_mae, col_rmse = st.columns(2)
+            col_mae.metric("MAE (test)", f"{mae:.2f} {satuan}".strip())
+            col_rmse.metric("RMSE (test)", f"{rmse:.2f} {satuan}".strip())
+
+def display_full_prediction_table(dataframe_forcast, semua_prediksi, semua_eksogen, metrik_utama=None):
+    st.subheader("Tabel Hasil Prediksi")
     tabel_prediksi = pd.DataFrame(index=dataframe_forcast)
-    tabel_prediksi['📅 Tanggal'] = tabel_prediksi.index.date
-    tabel_prediksi['🕐 Jam'] = tabel_prediksi.index.strftime('%H:%M')
-    tabel_prediksi['📆 Hari'] = tabel_prediksi.index.strftime('%A')
+    tabel_prediksi['Tanggal'] = tabel_prediksi.index.date
+    tabel_prediksi['Jam'] = tabel_prediksi.index.strftime('%H:%M')
+    tabel_prediksi['Hari'] = tabel_prediksi.index.strftime('%A')
 
-    if metrik_terpilih in semua_eksogen and not semua_eksogen[metrik_terpilih].empty:
-        eksogen_tampil = semua_eksogen[metrik_terpilih]
-        if 'jam' in eksogen_tampil.columns:
-            tabel_prediksi['🕐 Jam'] = eksogen_tampil['jam'].round(1)
+    kunci_eksogen = metrik_utama if metrik_utama in semua_eksogen else (list(semua_eksogen.keys())[0] if semua_eksogen else None)
+    if kunci_eksogen and not semua_eksogen[kunci_eksogen].empty:
+        eksogen_tampil = semua_eksogen[kunci_eksogen]
+        if 'log_person' in eksogen_tampil.columns:
+            tabel_prediksi['Estimasi Orang'] = np.expm1(eksogen_tampil['log_person']).round().astype(int)
 
     for metrik, prediksi in semua_prediksi.items():
-        if metrik == 'upload': nama_tampilan = '⬆️ Upload (Mbps)'
-        elif metrik == 'download': nama_tampilan = '⬇️ Download (Mbps)'
-        elif metrik == 'latency': nama_tampilan = '⏱️ Latency (ms)'
-        elif metrik == 'packet_loss': nama_tampilan = '📦 Packet Loss (%)'
-        elif metrik == 'jitter': nama_tampilan = '📶 Jitter (ms)'
+        if metrik == 'throughput': nama_tampilan = 'Throughput (Mbps)'
+        elif metrik == 'upload': nama_tampilan = 'Upload (Mbps)'
+        elif metrik == 'download': nama_tampilan = 'Download (Mbps)'
+        elif metrik == 'latency': nama_tampilan = 'Latency (ms)'
+        elif metrik == 'packet_loss': nama_tampilan = 'Packet Loss (%)'
+        elif metrik == 'jitter': nama_tampilan = 'Jitter (ms)'
         else: nama_tampilan = metrik.title()
         tabel_prediksi[nama_tampilan] = np.round(prediksi, 2)
 
     tabel_prediksi.reset_index(drop=True, inplace=True)
-    st.dataframe(tabel_prediksi, width="stretch")
+    st.dataframe(tabel_prediksi, width='content')
 
-def display_model_summary(skor_akurasi):
-    st.markdown("### 🎯 Ringkasan Model SARIMAX dengan Eksogen")
-    col_akurasi, _ = st.columns(2)
-    with col_akurasi:
-        st.markdown("#### 📊 Tingkat Akurasi Model")
-        tabel_akurasi = pd.DataFrame([
-            {
-                '📊 Metrik': metrik.title(),
-                '🎯 MAPE (%)': f"{akurasi:.1f}%",
-                '📈 Kualitas': (
-                    "Excellent" if akurasi < 10 else
-                    "Very Good" if akurasi < 20 else
-                    "Good" if akurasi < 35 else
-                    "Fair" if akurasi < 50 else "Poor"
-                ),
-            }
-            for metrik, akurasi in skor_akurasi.items()
-        ])
-        st.dataframe(tabel_akurasi, hide_index=True, width="stretch")
+def display_model_summary(skor_akurasi, semua_diagnostik=None):
+    """Ringkasan akurasi per model."""
+    st.subheader("Ringkasan Akurasi Model")
+    diag = semua_diagnostik or {}
+    baris = []
+    for metrik, akurasi in skor_akurasi.items():
+        d = diag.get(metrik) or {}
+        baris.append({
+            'Metrik': (
+                'Throughput' if metrik == 'throughput' else
+                'Latency' if metrik == 'latency' else
+                'Packet Loss' if metrik == 'packet_loss' else
+                'Jitter' if metrik == 'jitter' else
+                metrik.title()
+            ),
+            'Error (%)': f"{akurasi:.1f}%",
+            'MAE': f"{d['mae']:.2f} {_satuan(metrik)}".strip() if d.get('mae') is not None else '-',
+            'RMSE': f"{d['rmse']:.2f} {_satuan(metrik)}".strip() if d.get('rmse') is not None else '-',
+            'Kategori': (
+                "Sangat Baik (<10%)" if akurasi < 10 else
+                "Baik (10-20%)" if akurasi < 20 else
+                "Cukup (20-35%)" if akurasi < 35 else
+                "Memadai (35-50%)" if akurasi < 50 else "Kurang (>50%)"
+            ),
+        })
+    st.dataframe(pd.DataFrame(baris), hide_index=True, width='content')
 
-    rata_rata_akurasi = np.mean(list(skor_akurasi.values()))
-    if rata_rata_akurasi < 20:
-        st.success(f"🎉 **Model Sangat Akurat!** SARIMAX berhasil mencapai akurasi tinggi dengan rata-rata error {rata_rata_akurasi:.1f}%. Prediksi dapat diandalkan untuk perencanaan.")
-    elif rata_rata_akurasi < 35:
-        st.success(f"✅ **Model Cukup Reliable!** Dengan error rata-rata {rata_rata_akurasi:.1f}%, model menunjukkan performa baik dan dapat digunakan untuk estimasi.")
-    elif rata_rata_akurasi < 50:
-        st.warning(f"⚠️ **Model Memadai** dengan error {rata_rata_akurasi:.1f}%. Gunakan dengan hati-hati dan pertimbangkan untuk menambah data historis.")
-    else:
-        st.warning(f"⚠️ **Model Perlu Improvement** (error {rata_rata_akurasi:.1f}%). Pertimbangkan untuk menambah variabel eksogen atau memperbanyak data historis.")
