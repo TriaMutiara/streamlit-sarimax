@@ -51,11 +51,16 @@ def display_dataset_info(df):
 
 def get_prediction_parameters(df):
     st.subheader("Konfigurasi Prediksi")
-    hari_prediksi = st.number_input("Berapa hari ke depan ingin diprediksi?", min_value=1, max_value=30, value=2)
+    hari_prediksi = st.number_input("Berapa hari ke depan ingin diprediksi?", min_value=1, max_value=30, value=3)
     jam_prediksi_terpilih = [9, 12, 15]
 
-    mulai_prediksi = st.button("Mulai Prediksi SARIMAX", type="primary", width='content')
-    if not mulai_prediksi:
+    if "sudah_prediksi" not in st.session_state:
+        st.session_state["sudah_prediksi"] = False
+
+    if st.button("Mulai Prediksi SARIMAX", type="primary", width='content'):
+        st.session_state["sudah_prediksi"] = True
+
+    if not st.session_state["sudah_prediksi"]:
         st.stop()
     return hari_prediksi, jam_prediksi_terpilih
 
@@ -69,35 +74,29 @@ def _satuan(metrik):
     return ''
 
 def display_prediction_results(metrik, prediksi, akurasi, diagnostik=None):
-    nilai_tertinggi = np.max(prediksi)
-    nilai_terendah = np.min(prediksi)
-    rata_rata_prediksi = np.mean(prediksi)
-
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric("Nilai Tertinggi", f"{nilai_tertinggi:.2f}")
-    with col2:
-        st.metric("Nilai Terendah", f"{nilai_terendah:.2f}")
-    with col3:
-        st.metric("Rata-rata", f"{rata_rata_prediksi:.2f}")
-    with col4:
-        st.metric("Error (%)", f"{akurasi:.1f}%")
-
     if diagnostik:
         satuan = _satuan(metrik)
         mae = diagnostik.get('mae')
         rmse = diagnostik.get('rmse')
         if mae is not None and rmse is not None:
-            col_mae, col_rmse = st.columns(2)
-            col_mae.metric("MAE (test)", f"{mae:.2f} {satuan}".strip())
-            col_rmse.metric("RMSE (test)", f"{rmse:.2f} {satuan}".strip())
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Error (%)", f"{akurasi:.1f}%")
+            with col2:
+                st.metric("MAE (test)", f"{mae:.2f} {satuan}".strip())
+            with col3:
+                st.metric("RMSE (test)", f"{rmse:.2f} {satuan}".strip())
+            return
+
+    st.metric("Error (%)", f"{akurasi:.1f}%")
 
 def display_full_prediction_table(dataframe_forcast, semua_prediksi, semua_eksogen, metrik_utama=None):
     st.subheader("Tabel Hasil Prediksi")
+    hari_map = {0: 'Senin', 1: 'Selasa', 2: 'Rabu', 3: 'Kamis', 4: 'Jumat', 5: 'Sabtu', 6: 'Minggu'}
     tabel_prediksi = pd.DataFrame(index=dataframe_forcast)
-    tabel_prediksi['Tanggal'] = tabel_prediksi.index.date
+    tabel_prediksi['Tanggal'] = [d.strftime('%Y-%m-%d') for d in tabel_prediksi.index]
     tabel_prediksi['Jam'] = tabel_prediksi.index.strftime('%H:%M')
-    tabel_prediksi['Hari'] = tabel_prediksi.index.strftime('%A')
+    tabel_prediksi['Hari'] = [hari_map.get(d.dayofweek, d.strftime('%A')) for d in tabel_prediksi.index]
 
     kunci_eksogen = metrik_utama if metrik_utama in semua_eksogen else (list(semua_eksogen.keys())[0] if semua_eksogen else None)
     if kunci_eksogen and not semua_eksogen[kunci_eksogen].empty:
@@ -118,10 +117,45 @@ def display_full_prediction_table(dataframe_forcast, semua_prediksi, semua_eksog
     tabel_prediksi.reset_index(drop=True, inplace=True)
     st.dataframe(tabel_prediksi, width='content')
 
-def display_model_summary(skor_akurasi, semua_diagnostik=None):
+def display_comparison_table(dataframe_forcast, semua_prediksi, df_actual):
+    """Menampilkan tabel perbandingan Prediksi vs Data Aktual per kolom (bukan expander/collapse)."""
+    st.subheader("Tabel Perbandingan Prediksi vs Data Aktual")
+    hari_map = {0: 'Senin', 1: 'Selasa', 2: 'Rabu', 3: 'Kamis', 4: 'Jumat', 5: 'Sabtu', 6: 'Minggu'}
+    tabel_komp = pd.DataFrame(index=dataframe_forcast)
+    tabel_komp['Tanggal'] = [d.strftime('%Y-%m-%d') for d in tabel_komp.index]
+    tabel_komp['Jam'] = tabel_komp.index.strftime('%H:%M')
+    tabel_komp['Hari'] = [hari_map.get(d.dayofweek, d.strftime('%A')) for d in tabel_komp.index]
+
+    for metrik in semua_prediksi.keys():
+        lbl = (
+            'Throughput (Mbps)' if metrik == 'throughput' else
+            'Latency (ms)' if metrik == 'latency' else
+            'Jitter (ms)' if metrik == 'jitter' else
+            'Packet Loss (%)' if metrik == 'packet_loss' else metrik.title()
+        )
+        pred_val = np.round(semua_prediksi[metrik], 2)
+        tabel_komp[f'{lbl} (Pred)'] = pred_val
+        if metrik in df_actual.columns:
+            act_series = df_actual[metrik].reindex(dataframe_forcast)
+            act_val = np.round(act_series.values, 2)
+            tabel_komp[f'{lbl} (Akt)'] = act_val
+            tabel_komp[f'Selisih {lbl}'] = np.round(pred_val - act_val, 2)
+
+    tabel_komp.reset_index(drop=True, inplace=True)
+    st.dataframe(tabel_komp, width='content')
+
+def display_model_summary(skor_akurasi, semua_diagnostik=None, tipe_evaluasi="aktual"):
     """Ringkasan akurasi per model."""
-    st.subheader("Ringkasan Akurasi Model")
+    if tipe_evaluasi == "aktual":
+        st.subheader("Ringkasan Akurasi Prediksi (Evaluasi terhadap Data Aktual)")
+    else:
+        st.subheader("Ringkasan Akurasi Model (Evaluasi Data Uji)")
+
     diag = semua_diagnostik or {}
+    col_mae = "MAE (vs Aktual)" if tipe_evaluasi == "aktual" else "MAE (test)"
+    col_rmse = "RMSE (vs Aktual)" if tipe_evaluasi == "aktual" else "RMSE (test)"
+    col_err = "Error Prediksi (%)" if tipe_evaluasi == "aktual" else "Error (%)"
+
     baris = []
     for metrik, akurasi in skor_akurasi.items():
         d = diag.get(metrik) or {}
@@ -133,9 +167,9 @@ def display_model_summary(skor_akurasi, semua_diagnostik=None):
                 'Jitter' if metrik == 'jitter' else
                 metrik.title()
             ),
-            'Error (%)': f"{akurasi:.1f}%",
-            'MAE': f"{d['mae']:.2f} {_satuan(metrik)}".strip() if d.get('mae') is not None else '-',
-            'RMSE': f"{d['rmse']:.2f} {_satuan(metrik)}".strip() if d.get('rmse') is not None else '-',
+            col_err: f"{akurasi:.1f}%",
+            col_mae: f"{d['mae']:.2f} {_satuan(metrik)}".strip() if d.get('mae') is not None else '-',
+            col_rmse: f"{d['rmse']:.2f} {_satuan(metrik)}".strip() if d.get('rmse') is not None else '-',
             'Kategori': (
                 "Sangat Baik (<10%)" if akurasi < 10 else
                 "Baik (10-20%)" if akurasi < 20 else
@@ -144,4 +178,3 @@ def display_model_summary(skor_akurasi, semua_diagnostik=None):
             ),
         })
     st.dataframe(pd.DataFrame(baris), hide_index=True, width='content')
-

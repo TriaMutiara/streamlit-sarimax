@@ -1,9 +1,15 @@
+import os
 import streamlit as st
 import numpy as np
 import traceback
 from statsmodels.stats.diagnostic import acorr_ljungbox
 
 # Import components
+import importlib
+import model
+import display
+importlib.reload(model)
+importlib.reload(display)
 from pre_processing import load_data, clean_data
 from model import SarimaxEksogenPrediktor
 from visualization import plot_prediction, plot_acf_pacf, get_metric_display_name
@@ -15,12 +21,13 @@ from display import (
     get_prediction_parameters,
     display_prediction_results,
     display_full_prediction_table,
+    display_comparison_table,
     display_model_summary
 )
 
 
 @st.cache_data(show_spinner=False)
-def train_and_predict_metric(df, metrik, hari_prediksi, jam_prediksi_tuple):
+def train_and_predict_metric(df, metrik, hari_prediksi, jam_prediksi_tuple, _cache_version="5.0"):
     """Fungsi training & peramalan SARIMAX dengan caching Streamlit untuk optimasi performa."""
     jam_prediksi = list(jam_prediksi_tuple)
     predictor = SarimaxEksogenPrediktor(jam_prediksi)
@@ -39,7 +46,14 @@ def main():
     uploaded_file = st.file_uploader("Unggah file dataset kualitas internet (CSV atau XLSX)", type=["csv", "xlsx"])
 
     if uploaded_file is None:
+        st.session_state["sudah_prediksi"] = False
         return
+
+    # Reset status prediksi bila pengguna mengunggah file training baru
+    file_id = getattr(uploaded_file, "name", "default")
+    if st.session_state.get("current_train_file") != file_id:
+        st.session_state["current_train_file"] = file_id
+        st.session_state["sudah_prediksi"] = False
 
     try:
         with st.spinner("Memproses data..."):
@@ -94,7 +108,13 @@ def main():
             progress_bar.progress((i + 1) / len(kolom_tersedia))
 
             st.markdown(f"#### {nama_tampil}")
-            plot_prediction(metrik, akurasi, df[metrik].tail(72), dataframe_forcast, prediksi)
+
+            # Data Latih (Train) tail dan Data Testing (Kuning)
+            n_test = len(data_test) if data_test is not None else 0
+            data_train = df[metrik].iloc[:-n_test] if n_test > 0 else df[metrik]
+            train_plot = data_train.tail(60)
+
+            plot_prediction(metrik, akurasi, train_plot, dataframe_forcast, prediksi, data_test=data_test)
             display_prediction_results(metrik, prediksi, akurasi, diagnostik)
 
             if diagnostik is not None and data_test is not None and len(data_test) > 0:
@@ -125,9 +145,51 @@ def main():
 
         progress_bar.empty()
 
+        # Tampilkan Tabel Hasil Prediksi Utama
         if dataframe_forcast is not None and semua_prediksi:
             display_full_prediction_table(dataframe_forcast, semua_prediksi, semua_eksogen, metrik_utama)
-            display_model_summary(skor_akurasi, semua_diagnostik)
+
+            # Bagian Opsi Bandingkan dengan Data Aktual
+            st.divider()
+            st.subheader("Bandingkan dengan Data Aktual (Pengujian Model)")
+            st.markdown("Unggah file data aktual lapangan pada periode prediksi untuk memvalidasi akurasi model.")
+
+            uploaded_actual = st.file_uploader(
+                "Unggah file data aktual (CSV atau XLSX)",
+                type=["csv", "xlsx"],
+                key="uploader_data_aktual"
+            )
+
+            df_act = None
+            if uploaded_actual is not None:
+                try:
+                    df_act = clean_data(load_data(uploaded_actual))
+                except Exception as e:
+                    st.error(f"Gagal memproses file data aktual: {e}")
+
+            if df_act is not None and not df_act.empty:
+                # Tampilkan tabel perbandingan per kolom langsung (BUKAN dalam expander/collapse)
+                display_comparison_table(dataframe_forcast, semua_prediksi, df_act)
+
+                # Hitung dan tampilkan Ringkasan Akurasi Prediksi (Evaluasi terhadap Data Aktual)
+                skor_eval_aktual = {}
+                diag_eval_aktual = {}
+                p_eval = SarimaxEksogenPrediktor()
+
+                for metrik in semua_prediksi.keys():
+                    if metrik in df_act.columns:
+                        y_act_series = df_act[metrik].reindex(dataframe_forcast).dropna()
+                        if len(y_act_series) == len(semua_prediksi[metrik]):
+                            y_act_arr = y_act_series.values.astype(float)
+                            pred_arr = np.asarray(semua_prediksi[metrik], dtype=float)
+                            err_act = p_eval.hitung_error_evaluasi(y_act_arr, pred_arr, metrik)
+                            mae_act = float(np.mean(np.abs(y_act_arr - pred_arr)))
+                            rmse_act = float(np.sqrt(np.mean((y_act_arr - pred_arr) ** 2)))
+                            skor_eval_aktual[metrik] = err_act
+                            diag_eval_aktual[metrik] = {'mae': mae_act, 'rmse': rmse_act}
+
+                if skor_eval_aktual:
+                    display_model_summary(skor_eval_aktual, diag_eval_aktual, tipe_evaluasi="aktual")
 
     except Exception as e:
         st.error(f"Terjadi kesalahan saat menjalankan aplikasi: {str(e)}")

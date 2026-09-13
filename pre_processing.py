@@ -23,6 +23,23 @@ def clean_data(df):
     data_bersih = data_bersih.dropna(how='all')
     data_bersih.columns = data_bersih.columns.astype(str).str.strip().str.lower().str.replace(' ', '_')
 
+    # Pemetaan fleksibel nama kolom (misal throughput_(mbps), latency_(ms), packet_loss_(%), orang)
+    col_map = {}
+    for col in data_bersih.columns:
+        c_low = col.lower()
+        if 'throughput' in c_low:
+            col_map[col] = 'throughput'
+        elif 'latency' in c_low or 'latensi' in c_low:
+            col_map[col] = 'latency'
+        elif 'jitter' in c_low:
+            col_map[col] = 'jitter'
+        elif 'packet' in c_low and 'loss' in c_low:
+            col_map[col] = 'packet_loss'
+        elif 'orang' in c_low or 'person' in c_low:
+            col_map[col] = 'orang'
+    if col_map:
+        data_bersih = data_bersih.rename(columns=col_map)
+
     if 'tanggal' in data_bersih.columns and 'jam' in data_bersih.columns:
         waktu_gabungan = data_bersih['tanggal'].astype(str) + ' ' + data_bersih['jam'].astype(str)
         date_formats = [
@@ -49,11 +66,11 @@ def clean_data(df):
         data_bersih.set_index('waktu', inplace=True)
         data_bersih = data_bersih.drop(['tanggal', 'jam', 'hari'], axis=1, errors='ignore')
 
-    # Pembersihan kolom numerik
+    # Pembersihan kolom numerik & penggantian koma desimal
     kolom_angka = ['throughput', 'latency', 'jitter', 'packet_loss', 'orang', 'upload', 'download']
     for kolom in kolom_angka:
         if kolom in data_bersih.columns:
-            if data_bersih[kolom].dtype == 'object':
+            if not pd.api.types.is_numeric_dtype(data_bersih[kolom]):
                 data_bersih[kolom] = data_bersih[kolom].astype(str).str.replace(',', '.')
             data_bersih[kolom] = pd.to_numeric(data_bersih[kolom], errors='coerce')
 

@@ -1,6 +1,7 @@
 import streamlit as st
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 
 def get_metric_display_name(metrik):
@@ -19,11 +20,20 @@ def get_metric_display_name(metrik):
         return 'Packet Loss (%)'
     return metrik.title()
 
-def plot_prediction(metrik, akurasi, data_terkini, dataframe_forcast, prediksi):
+def plot_prediction(metrik, akurasi, data_train, dataframe_forcast, prediksi, data_test=None):
     nama_display = get_metric_display_name(metrik)
     fig, ax = plt.subplots(1, 1, figsize=(14, 6))
 
-    ax.plot(data_terkini.index, data_terkini.values, label='Data Historis', color='#1f77b4', alpha=0.8, linewidth=2)
+    # Data Historis (Train) - Biru
+    ax.plot(data_train.index, data_train.values, label='Data Historis', color='#1f77b4', alpha=0.85, linewidth=2)
+
+    # Data Testing - Kuning
+    if data_test is not None and len(data_test) > 0:
+        # Sambungkan titik terakhir data latih ke awal data testing agar kurva tidak putus
+        test_sambung = pd.concat([data_train.iloc[[-1]], data_test]) if len(data_train) > 0 else data_test
+        ax.plot(test_sambung.index, test_sambung.values, label='Data Testing', color='#d4ac0d', marker='.', markersize=6, linewidth=2.2, alpha=0.95)
+
+    # Prediksi SARIMAX - Oranye
     ax.plot(dataframe_forcast, prediksi, label='Prediksi SARIMAX', color='#ff7f0e', marker='o', markersize=6, linewidth=2.5, alpha=0.9)
 
     for waktu in dataframe_forcast:
@@ -33,7 +43,7 @@ def plot_prediction(metrik, akurasi, data_terkini, dataframe_forcast, prediksi):
     ax.set_title(f'{nama_display} - Prediksi dengan Eksogen (Error: {akurasi:.1f}%)', fontweight='bold', fontsize=14)
     ax.set_ylabel(nama_display, fontsize=12)
     ax.set_xlabel('Waktu', fontsize=12)
-    ax.legend(fontsize=10)
+    ax.legend(fontsize=10, loc='best')
     ax.grid(True, alpha=0.3)
 
     plt.xticks(rotation=45)
